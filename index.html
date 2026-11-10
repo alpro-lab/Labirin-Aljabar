@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Labirin Aljabar</title>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#eef4fa;--line:#cfdcec;--fg:#14284b;--muted:#5b6b86;--card:#fff;--wall:#1c3566;--floor:#f8fbff;--acc:#f2b705;--ok:#1f9d63;--bad:#d9423a;--btn:#e3ecf8;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f1a30;--line:#1c2c4b;--fg:#e8eefb;--muted:#9fb0cf;--card:#172644;--wall:#5f86d6;--floor:#0c1426;--btn:#22345a}}
+:root[data-theme="dark"]{--bg:#0f1a30;--line:#1c2c4b;--fg:#e8eefb;--muted:#9fb0cf;--card:#172644;--wall:#5f86d6;--floor:#0c1426;--btn:#22345a}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;min-height:100vh;font-family:Lexend,system-ui,sans-serif;color:var(--fg);background-color:var(--bg);
+background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);background-size:24px 24px;line-height:1.5}
+main{max-width:520px;margin:0 auto;padding:20px 16px 32px}
+h1{font-size:2rem;font-weight:800;margin:8px 0 4px;letter-spacing:-.02em}
+h1 .x{display:inline-block;background:var(--acc);color:#14284b;padding:0 .35em;border-radius:6px;transform:rotate(-4deg);margin-right:.2em}
+p.sub{margin:0 0 20px;color:var(--muted)}
+.card{background:var(--card);border:2px solid var(--fg);border-radius:14px;padding:16px;box-shadow:5px 5px 0 var(--fg)}
+h2{font-size:1rem;margin:0 0 10px;font-weight:600}
+.row{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin-bottom:18px}
+button{font:inherit;color:var(--fg);cursor:pointer}
+.opt{background:var(--btn);border:2px solid var(--fg);border-radius:10px;padding:10px 8px;font-weight:600;text-align:center}
+.opt small{display:block;font-weight:400;color:var(--muted);font-size:.75rem}
+.opt[aria-pressed="true"]{background:var(--acc);color:#14284b}
+.opt[aria-pressed="true"] small{color:#14284b}
+.go{width:100%;background:var(--fg);color:var(--bg);border:2px solid var(--fg);border-radius:12px;padding:14px;font-weight:800;font-size:1.05rem}
+button:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+.hud{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px;font-weight:600;font-size:.9rem}
+.hud .pill{background:var(--card);border:2px solid var(--fg);border-radius:999px;padding:2px 12px}
+canvas{display:block;width:100%;aspect-ratio:1;border:2px solid var(--fg);border-radius:12px;background:var(--floor);box-shadow:5px 5px 0 var(--fg);touch-action:none}
+.pad{display:grid;grid-template-columns:repeat(3,64px);grid-template-rows:repeat(2,56px);gap:6px;justify-content:center;margin:18px 0 8px}
+.pad button{background:var(--card);border:2px solid var(--fg);border-radius:12px;font-size:1.4rem;font-weight:800}
+.pad button:active{background:var(--acc)}
+.pad .u{grid-column:2}.pad .l{grid-row:2;grid-column:1}.pad .d{grid-row:2;grid-column:2}.pad .r{grid-row:2;grid-column:3}
+.back{background:none;border:none;text-decoration:underline;color:var(--muted);padding:6px;display:block;margin:0 auto}
+.ov{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(10,20,40,.6);display:none;align-items:center;justify-content:center;padding:16px;z-index:20}
+.ov.on{display:flex}
+.ov .card{width:100%;max-width:440px;max-height:92vh;overflow:auto}
+.qn{font-size:.85rem;color:var(--muted);margin:0 0 6px}
+.qt{font-size:1.45rem;font-weight:800;margin:0 0 14px;line-height:1.3}
+.ans{display:grid;gap:8px}
+.ans button{background:var(--btn);border:2px solid var(--fg);border-radius:10px;padding:12px;font-weight:600;font-size:1.05rem;text-align:left}
+.ans button.ok{background:var(--ok);color:#fff;border-color:var(--ok)}
+.ans button.bad{background:var(--bad);color:#fff;border-color:var(--bad)}
+.fb{min-height:1.5em;margin:12px 0 0;font-weight:600}
+.end h2{font-size:1.5rem}
+.stars{font-size:2rem;letter-spacing:.1em}
+.end .go{margin-top:8px}
+.snd{position:fixed;top:calc(env(safe-area-inset-top,0px) + 10px);right:12px;z-index:30;width:44px;height:44px;border-radius:50%;background:var(--card);border:2px solid var(--fg);font-size:1.2rem;line-height:1;padding:0}
+[hidden]{display:none!important}
+@media (prefers-reduced-motion:no-preference){.ans button{transition:background .15s}}
+</style>
+</head>
+<body>
+<main>
+<section id="menu">
+  <h1><span class="x">x</span>Labirin Aljabar</h1>
+  <p class="sub">Jelajahi labirin. Setiap gerbang berisi satu soal aljabar. Jawab benar untuk membukanya, lalu temukan jalan keluar.</p>
+  <div class="card">
+    <h2>Pilih jenjang</h2>
+    <div class="row" id="jRow">
+      <button class="opt" data-j="SMP" aria-pressed="true">SMP<small>Kelas 7–9</small></button>
+      <button class="opt" data-j="SMA" aria-pressed="false">SMA<small>Kelas 10–12</small></button>
+    </div>
+    <h2>Pilih tingkat kesulitan</h2>
+    <div class="row" id="lRow">
+      <button class="opt" data-l="mudah" aria-pressed="true">Mudah<small>8 soal</small></button>
+      <button class="opt" data-l="sedang" aria-pressed="false">Sedang<small>8 soal</small></button>
+      <button class="opt" data-l="sulit" aria-pressed="false">Sulit<small>8 soal</small></button>
+    </div>
+    <button class="go" id="start">Mulai bermain</button>
+  </div>
+</section>
+
+<section id="game" hidden>
+  <div class="hud"><span class="pill" id="hLvl"></span><span class="pill" id="hGate"></span><span class="pill" id="hLife"></span></div>
+  <canvas id="cv" width="600" height="600" aria-label="Labirin"></canvas>
+  <div class="pad" aria-label="Kontrol arah">
+    <button class="u" data-d="0,-1" aria-label="Atas">▲</button>
+    <button class="l" data-d="-1,0" aria-label="Kiri">◀</button>
+    <button class="d" data-d="0,1" aria-label="Bawah">▼</button>
+    <button class="r" data-d="1,0" aria-label="Kanan">▶</button>
+  </div>
+  <button class="back" id="toMenu">Kembali ke menu</button>
+</section>
+</main>
+
+<button class="snd" id="snd" aria-label="Nyalakan atau matikan musik">🔊</button>
+
+<div class="ov" id="qOv"><div class="card">
+  <p class="qn" id="qn"></p><p class="qt" id="qt"></p><div class="ans" id="ans"></div><p class="fb" id="fb"></p>
+</div></div>
+
+<div class="ov" id="eOv"><div class="card end">
+  <h2 id="eT"></h2><div class="stars" id="eS"></div><p id="eP"></p>
+  <button class="go" id="again">Main lagi</button>
+  <button class="back" id="eMenu">Kembali ke menu</button>
+</div></div>
+
+<script>
+// Format soal: [pertanyaan, jawaban benar, salah1, salah2, salah3]
+const Q={
+SMP:{
+mudah:[
+["2x + 3 = 11. Berapa x?","4","3","5","7"],
+["x − 5 = 9. Berapa x?","14","4","13","15"],
+["3x = 27. Berapa x?","9","8","24","10"],
+["Sederhanakan 4a + 3a","7a","12a","7a²","a"],
+["x/2 = 6. Berapa x?","12","3","8","4"],
+["5x − 4 = 16. Berapa x?","4","3","5","6"],
+["Nilai 2x + 1 jika x = 3","7","6","8","5"],
+["7 + y = 15. Berapa y?","8","22","7","9"]],
+sedang:[
+["3(x − 2) = 12. Berapa x?","6","4","2","10"],
+["5x + 2 = 3x + 10. Berapa x?","4","2","6","8"],
+["Hasil (x + 3)(x + 2)","x² + 5x + 6","x² + 6x + 5","x² + 5x + 5","x² + 6"],
+["Faktorkan x² − 9","(x + 3)(x − 3)","(x − 3)²","(x + 9)(x − 1)","(x − 9)(x + 1)"],
+["2x − y = 5 dan y = 1. Berapa x?","3","2","4","5"],
+["(2x + 1)/3 = 5. Berapa x?","7","5","6","8"],
+["Umur ayah 3 kali umur anak. Jumlah umur mereka 48 tahun. Berapa umur anak?","12","16","9","36"],
+["Penyelesaian positif dari x² = 49","7","14","24,5","9"]],
+sulit:[
+["(x + 2)/3 − (x − 1)/2 = 1. Berapa x?","1","7","−1","2"],
+["Jumlah akar-akar x² − 5x + 6 = 0","5","6","−5","1"],
+["Faktorkan 2x² + 7x + 3","(2x + 1)(x + 3)","(2x + 3)(x + 1)","(2x + 1)(x − 3)","(x + 7)(2x + 3)"],
+["Keliling persegi panjang 36 cm dan panjangnya 2 kali lebar. Berapa luasnya?","72 cm²","54 cm²","48 cm²","36 cm²"],
+["Sederhanakan (a + b)² − (a − b)²","4ab","2ab","2a² + 2b²","0"],
+["3x − 2y = 7 dan x + y = 4. Berapa x?","3","2","1","5"],
+["Kuadrat suatu bilangan positif dikurangi 3 kali bilangan itu hasilnya 10. Berapa bilangannya?","5","2","3","10"],
+["Jika x + 1/x = 3, berapa x² + 1/x²?","7","9","5","6"]]},
+SMA:{
+mudah:[
+["Penyelesaian |x| = 5","x = 5 atau x = −5","x = 5","x = 0","x = 25"],
+["2ˣ = 8. Berapa x?","3","2","4","6"],
+["Penyelesaian x² − 4 = 0","x = ±2","x = 4","x = 2 saja","x = ±4"],
+["Jika f(x) = x² + 1, berapa f(2)?","5","4","3","6"],
+["Gradien garis y = 3x + 5","3","5","8","1/3"],
+["Nilai ²log 8","3","4","2","16"],
+["Akar-akar x² − 5x + 6 = 0","2 dan 3","1 dan 6","−2 dan −3","5 dan 6"],
+["√(x + 1) = 3. Berapa x?","8","2","9","10"]],
+sedang:[
+["Penyelesaian 2x − 5 > 3","x > 4","x > 1","x < 4","x > 8"],
+["Titik puncak y = x² − 4x + 3","(2, −1)","(2, 1)","(−2, −1)","(4, 3)"],
+["Jumlah akar-akar 2x² − 6x + 4 = 0","3","2","−3","6"],
+["Nilai ³log 81 + ²log 8","7","12","5","6"],
+["Suku ke-10 barisan 3, 7, 11, …","39","43","40","37"],
+["x + y = 7 dan x − y = 1. Penyelesaiannya (x, y)","(4, 3)","(3, 4)","(5, 2)","(6, 1)"],
+["Diskriminan x² + 2x + 5","−16","16","24","−24"],
+["2^(x+1) = 32. Berapa x?","4","5","3","16"]],
+sulit:[
+["Penyelesaian x² − 2x − 8 ≤ 0","−2 ≤ x ≤ 4","x ≤ −2 atau x ≥ 4","−4 ≤ x ≤ 2","x ≤ −4 atau x ≥ 2"],
+["Jumlah 10 suku pertama deret 2 + 5 + 8 + …","155","150","145","160"],
+["log x + log (x − 3) = 1. Berapa x?","5","−2","2","10"],
+["f(x) = 2x + 1 dan g(x) = x² − 3. Berapa (f∘g)(2)?","3","22","7","1"],
+["x² − 6x + k = 0 punya akar kembar. Berapa k?","9","6","36","3"],
+["Jumlah tak hingga deret 18 + 6 + 2 + …","27","24","36","54"],
+["Jika f(x) = (2x + 1)/(x − 3), maka f⁻¹(x) =","(3x + 1)/(x − 2)","(3x − 1)/(x − 2)","(x − 3)/(2x + 1)","(3x + 1)/(x + 2)"],
+["α dan β akar-akar x² − 3x + 2 = 0. Berapa α² + β²?","5","7","13","1"]]}};
+
+// Backsound dan efek suara (dibuat dengan Web Audio, tanpa file audio)
+const Snd=(()=>{
+  let ac,mg,on=true,tm=null,step=0,nt=0;
+  const CH=[[220,261.63,329.63],[174.61,220,261.63],[261.63,329.63,392],[196,246.94,293.66]],PT=[0,1,2,1,0,1,2,1],E=.3;
+  function tone(f,t,d,type,v){
+    const o=ac.createOscillator(),g=ac.createGain();o.type=type;o.frequency.value=f;
+    g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(v,t+.02);g.gain.exponentialRampToValueAtTime(.0001,t+d);
+    o.connect(g);g.connect(mg);o.start(t);o.stop(t+d+.05);
+  }
+  function sched(){
+    while(nt<ac.currentTime+.4){
+      const c=CH[(step>>3)%4],i=step%8;
+      tone(c[PT[i]]*2,nt,E*1.6,"triangle",.05);
+      if(i===0)tone(c[0]/2,nt,E*6,"sine",.12);
+      if(i===4)tone(c[0],nt,E*3,"sine",.05);
+      nt+=E;step++;
+    }
+  }
+  function run(){if(tm||!on||!ac)return;nt=ac.currentTime+.05;tm=setInterval(sched,120)}
+  function halt(){clearInterval(tm);tm=null}
+  const api={
+    start(){
+      if(!ac){const A=window.AudioContext||window.webkitAudioContext;if(!A)return;ac=new A();mg=ac.createGain();mg.gain.value=.7;mg.connect(ac.destination)}
+      ac.resume();run();
+    },
+    toggle(){on=!on;if(ac){on?run():halt()}return on},
+    sfx(k){
+      if(!ac||!on)return;try{const t=ac.currentTime;
+      ({ok:[[660,0],[880,.1]],bad:[[196,0],[147,.15]],win:[[523,0],[659,.12],[784,.24],[1047,.36]],lose:[[330,0],[262,.2],[196,.4]]})[k]
+        .forEach(([f,d])=>tone(f,t+d,.35,(k==="bad"||k==="lose")?"sawtooth":"square",.06));}catch(e){}
+    }
+  };
+  const btn=document.getElementById("snd");
+  btn.onclick=()=>{btn.textContent=api.toggle()?"🔊":"🔇"};
+  document.addEventListener("visibilitychange",()=>{if(!ac)return;document.hidden?ac.suspend():(on&&ac.resume())});
+  return api;
+})();
+
+const $=id=>document.getElementById(id);
+const cv=$("cv"),cx=cv.getContext("2d");
+const N=15,S=cv.width/N;
+let jenjang="SMP",level="mudah",G=null,busy=false;
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a};
+const cap=s=>s[0].toUpperCase()+s.slice(1);
+
+function pick(rowId,attr,set){
+  $(rowId).addEventListener("click",e=>{const b=e.target.closest(".opt");if(!b)return;
+    $(rowId).querySelectorAll(".opt").forEach(x=>x.setAttribute("aria-pressed",x===b));set(b.dataset[attr])})}
+pick("jRow","j",v=>jenjang=v);pick("lRow","l",v=>level=v);
+
+function makeMaze(){
+  for(;;){
+    const g=Array.from({length:N},()=>Array(N).fill(1));
+    const st=[[1,1]];g[1][1]=0;
+    while(st.length){
+      const [x,y]=st[st.length-1];
+      const nb=shuffle([[2,0],[-2,0],[0,2],[0,-2]]).filter(([dx,dy])=>{const a=x+dx,b=y+dy;return a>0&&b>0&&a<N-1&&b<N-1&&g[b][a]});
+      if(!nb.length){st.pop();continue}
+      const [dx,dy]=nb[0];g[y+dy/2][x+dx/2]=0;g[y+dy][x+dx]=0;st.push([x+dx,y+dy]);
+    }
+    // jalur terpendek dari start ke pintu keluar (BFS)
+    const prev={},q=[[1,1]];prev["1,1"]=null;
+    while(q.length){const [x,y]=q.shift();if(x===N-2&&y===N-2)break;
+      for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){const a=x+dx,b=y+dy,k=a+","+b;
+        if(!g[b][a]&&!(k in prev)){prev[k]=[x,y];q.push([a,b])}}}
+    const path=[];let c=[N-2,N-2];while(c){path.unshift(c);c=prev[c[0]+","+c[1]]}
+    if(path.length>=36)return {g,path};
+  }
+}
+
+function startGame(){
+  try{Snd.start()}catch(e){}
+  const qs=shuffle(Q[jenjang][level]);
+  const {g,path}=makeMaze();
+  const gates={},n=qs.length,span=path.length-2;
+  for(let i=0;i<n;i++){const idx=1+Math.round((i+.5)*span/n-.5);const p=path[Math.min(idx,path.length-2)];gates[p[0]+","+p[1]]={q:qs[i],open:false,no:i+1}}
+  G={g,gates,n,px:1,py:1,lives:3,solved:0,over:false};
+  $("menu").hidden=true;$("game").hidden=false;$("eOv").classList.remove("on");
+  hud();draw();
+}
+function hud(){
+  $("hLvl").textContent=jenjang+" · "+cap(level);
+  $("hGate").textContent="Gerbang "+G.solved+"/"+G.n;
+  $("hLife").textContent="❤️".repeat(G.lives)+"🖤".repeat(3-G.lives);
+}
+function css(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim()}
+function rr(x,y,w,h,r){cx.beginPath();cx.moveTo(x+r,y);cx.arcTo(x+w,y,x+w,y+h,r);cx.arcTo(x+w,y+h,x,y+h,r);cx.arcTo(x,y+h,x,y,r);cx.arcTo(x,y,x+w,y,r);cx.closePath();cx.fill()}
+function draw(){
+  const wall=css("--wall"),floor=css("--floor"),acc=css("--acc"),ok=css("--ok"),fg=css("--fg");
+  cx.fillStyle=floor;cx.fillRect(0,0,cv.width,cv.height);
+  for(let y=0;y<N;y++)for(let x=0;x<N;x++)if(G.g[y][x]){cx.fillStyle=wall;cx.fillRect(x*S,y*S,S+.5,S+.5)}
+  cx.textAlign="center";cx.textBaseline="middle";
+  for(const k in G.gates){const [x,y]=k.split(",").map(Number),t=G.gates[k];
+    if(t.open){cx.fillStyle=ok;cx.globalAlpha=.25;cx.fillRect(x*S+3,y*S+3,S-6,S-6);cx.globalAlpha=1;continue}
+    cx.fillStyle=acc;rr(x*S+3,y*S+3,S-6,S-6,8);
+    cx.fillStyle="#14284b";cx.font="800 "+S*.55+"px Lexend,sans-serif";cx.fillText(t.no,x*S+S/2,y*S+S/2+2)}
+  cx.font=S*.7+"px serif";cx.fillText("🏁",(N-2)*S+S/2,(N-2)*S+S/2+2);
+  cx.fillStyle=fg;cx.beginPath();cx.arc(G.px*S+S/2,G.py*S+S/2,S*.32,0,7);cx.fill();
+  cx.fillStyle=acc;cx.font="800 "+S*.42+"px Lexend,sans-serif";cx.fillText("x",G.px*S+S/2,G.py*S+S/2+1);
+}
+
+function move(dx,dy){
+  if(!G||G.over||busy)return;
+  const nx=G.px+dx,ny=G.py+dy;
+  if(G.g[ny][nx])return;
+  const gt=G.gates[nx+","+ny];
+  if(gt&&!gt.open){ask(gt,nx,ny);return}
+  G.px=nx;G.py=ny;draw();
+  if(nx===N-2&&ny===N-2)finish(true);
+}
+
+function ask(gt,nx,ny){
+  busy=true;
+  const [q,right,...wrong]=gt.q;
+  $("qn").textContent="Gerbang "+gt.no+" dari "+G.n;
+  $("qt").textContent=q;$("fb").textContent="";
+  const box=$("ans");box.innerHTML="";
+  shuffle([right,...wrong]).forEach(t=>{
+    const b=document.createElement("button");b.textContent=t;
+    b.onclick=()=>{
+      box.querySelectorAll("button").forEach(x=>x.disabled=true);
+      if(t===right){
+        b.classList.add("ok");Snd.sfx("ok");$("fb").textContent="Benar! Gerbang terbuka.";
+        gt.open=true;G.solved++;
+        setTimeout(()=>{$("qOv").classList.remove("on");busy=false;G.px=nx;G.py=ny;hud();draw()},750);
+      }else{
+        b.classList.add("bad");Snd.sfx("bad");G.lives--;
+        box.querySelectorAll("button").forEach(x=>{if(x.textContent===right)x.classList.add("ok")});
+        $("fb").textContent="Kurang tepat. Jawaban yang benar: "+right;hud();
+        setTimeout(()=>{$("qOv").classList.remove("on");busy=false;if(G.lives<=0)finish(false)},1700);
+      }};
+    box.appendChild(b)});
+  $("qOv").classList.add("on");
+}
+
+function finish(win){Snd.sfx(win?"win":"lose");
+  G.over=true;
+  const s=win?(G.lives>=3?3:G.lives===2?2:1):0;
+  $("eT").textContent=win?"Kamu berhasil keluar!":"Nyawa habis";
+  $("eS").textContent=win?"★".repeat(s)+"☆".repeat(3-s):"";
+  $("eP").textContent=win?"Semua "+G.n+" gerbang terbuka dengan sisa "+G.lives+" nyawa.":"Kamu membuka "+G.solved+" dari "+G.n+" gerbang. Coba lagi dengan labirin baru.";
+  $("eOv").classList.add("on");
+}
+
+function toMenu(){G=null;$("game").hidden=true;$("menu").hidden=false;$("eOv").classList.remove("on");$("qOv").classList.remove("on");busy=false}
+$("start").onclick=startGame;$("again").onclick=startGame;
+$("toMenu").onclick=toMenu;$("eMenu").onclick=toMenu;
+document.querySelectorAll(".pad button").forEach(b=>b.onclick=()=>{const [dx,dy]=b.dataset.d.split(",").map(Number);move(dx,dy)});
+addEventListener("keydown",e=>{
+  const m={ArrowUp:[0,-1],w:[0,-1],ArrowDown:[0,1],s:[0,1],ArrowLeft:[-1,0],a:[-1,0],ArrowRight:[1,0],d:[1,0]}[e.key];
+  if(m&&G&&!$("game").hidden){e.preventDefault();move(...m)}});
+let t0=null;
+cv.addEventListener("touchstart",e=>{t0=e.touches[0]},{passive:true});
+cv.addEventListener("touchend",e=>{if(!t0)return;const t=e.changedTouches[0],dx=t.clientX-t0.clientX,dy=t.clientY-t0.clientY;t0=null;
+  if(Math.max(Math.abs(dx),Math.abs(dy))<24)return;
+  Math.abs(dx)>Math.abs(dy)?move(Math.sign(dx),0):move(0,Math.sign(dy))});
+matchMedia("(prefers-color-scheme:dark)").addEventListener("change",()=>G&&draw());
+</script>
+</body>
+</html>
